@@ -9,13 +9,13 @@ Analisador léxico e sintático para a linguagem MicroPascal (μ-Pascal), implem
 ## Compilação
 
 ```bash
-gcc main.c lexico.c sintatico.c -o compilador.exe
+gcc main.c lexico.c sintatico.c -o analisador.exe
 ```
 
 ## Uso
 
 ```bash
-./compilador.exe <arquivo_fonte.mp>
+./analisador.exe <arquivo_fonte.mp>
 ```
 
 ## Estrutura
