@@ -1,4 +1,5 @@
 # Compilado
+*.exe
 *.o
 *.obj
 
