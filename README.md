@@ -16,6 +16,9 @@ gcc main.c lexico.c sintatico.c -o compilador.exe
 
 ```bash
 ./compilador.exe <arquivo_fonte.mp>
+
+# Exemplo rodando um dos testes:
+./compilador.exe testes/correto1.mp
 ```
 
 ## Estrutura
