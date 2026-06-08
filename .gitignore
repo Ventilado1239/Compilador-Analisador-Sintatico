@@ -1,0 +1,8 @@
+# Compilado
+*.exe
+*.o
+*.obj
+
+# Temporários
+temp/
+*.log
