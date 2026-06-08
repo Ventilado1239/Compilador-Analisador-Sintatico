@@ -3,6 +3,9 @@
 *.o
 *.obj
 
+# VS Code
+.vscode/
+
 # Temporários
 temp/
 *.log
