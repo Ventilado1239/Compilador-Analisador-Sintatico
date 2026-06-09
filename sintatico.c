@@ -60,19 +60,21 @@ static void analisarBloco(void) {
 
 /* <parte de declarações de variáveis> ::= { var <declaração de variáveis> {; <declaração de variáveis>} ; } */
 static void analisarParteDeclaracoesVariaveis(void) {
-    if (current_token.tipo == TOKEN_VAR) {
-        printf("<parte de declarações de variáveis> ::= var <declaração de variáveis> {; <declaração de variáveis>} ;\n");
-        while (current_token.tipo == TOKEN_VAR) {
-            casaToken(TOKEN_VAR);
+    if (current_token.tipo != TOKEN_VAR) {
+        printf("<parte de declarações de variáveis> ::= vazio\n");
+        return;
+    }
+    printf("<parte de declarações de variáveis> ::= var <declaração de variáveis> {; <declaração de variáveis>} ;\n");
+    for (;;) {
+        if (current_token.tipo != TOKEN_VAR) break;
+        casaToken(TOKEN_VAR);
+        analisarDeclaracaoVariaveis();
+        casaToken(';');
+        for (;;) {
+            if (current_token.tipo != TOKEN_IDENT) break;
             analisarDeclaracaoVariaveis();
             casaToken(';');
-            while (current_token.tipo == TOKEN_IDENT) {
-                analisarDeclaracaoVariaveis();
-                casaToken(';');
-            }
         }
-    } else {
-        printf("<parte de declarações de variáveis> ::= vazio\n");
     }
 }
 
@@ -88,7 +90,8 @@ static void analisarDeclaracaoVariaveis(void) {
 static void analisarListaIdentificadores(void) {
     printf("<lista de identificadores> ::= <identificador> { , <identificador> }\n");
     casaToken(TOKEN_IDENT);
-    while (current_token.tipo == ',') {
+    for (;;) {
+        if (current_token.tipo != ',') break;
         casaToken(',');
         casaToken(TOKEN_IDENT);
     }
@@ -96,16 +99,18 @@ static void analisarListaIdentificadores(void) {
 
 /* <tipo> ::= integer | real */
 static void analisarTipo(void) {
-    int type = current_token.tipo;
-    if (type == TOKEN_INTEGER) {
-        printf("<tipo> ::= integer\n");
-        casaToken(TOKEN_INTEGER);
-    } else if (type == TOKEN_REAL) {
-        printf("<tipo> ::= real\n");
-        casaToken(TOKEN_REAL);
-    } else {
-        // Força erro usando casaToken
-        casaToken(TOKEN_INTEGER);
+    switch (current_token.tipo) {
+        case TOKEN_INTEGER:
+            printf("<tipo> ::= integer\n");
+            casaToken(TOKEN_INTEGER);
+            break;
+        case TOKEN_REAL:
+            printf("<tipo> ::= real\n");
+            casaToken(TOKEN_REAL);
+            break;
+        default:
+            casaToken(TOKEN_INTEGER); // Força erro
+            break;
     }
 }
 
@@ -115,7 +120,10 @@ static void analisarComandoComposto(void) {
     casaToken(TOKEN_BEGIN);
     analisarComando();
     casaToken(';');
-    while (current_token.tipo != TOKEN_END && current_token.tipo != TOKEN_EOF) {
+    for (;;) {
+        if (current_token.tipo == TOKEN_END || current_token.tipo == TOKEN_EOF) {
+            break;
+        }
         analisarComando();
         casaToken(';');
     }
@@ -124,22 +132,26 @@ static void analisarComandoComposto(void) {
 
 /* <comando> ::= <atribuição> | <comando composto> | <comando condicional> | <comando repetitivo> */
 static void analisarComando(void) {
-    int type = current_token.tipo;
-    if (type == TOKEN_IDENT) {
-        printf("<comando> ::= <atribuição>\n");
-        analisarAtribuicao();
-    } else if (type == TOKEN_BEGIN) {
-        printf("<comando> ::= <comando composto>\n");
-        analisarComandoComposto();
-    } else if (type == TOKEN_IF) {
-        printf("<comando> ::= <comando condicional>\n");
-        analisarComandoCondicional();
-    } else if (type == TOKEN_WHILE) {
-        printf("<comando> ::= <comando repetitivo>\n");
-        analisarComandoRepetitivo();
-    } else {
-        // Força erro: comando esperado
-        casaToken(TOKEN_IDENT);
+    switch (current_token.tipo) {
+        case TOKEN_IDENT:
+            printf("<comando> ::= <atribuição>\n");
+            analisarAtribuicao();
+            break;
+        case TOKEN_BEGIN:
+            printf("<comando> ::= <comando composto>\n");
+            analisarComandoComposto();
+            break;
+        case TOKEN_IF:
+            printf("<comando> ::= <comando condicional>\n");
+            analisarComandoCondicional();
+            break;
+        case TOKEN_WHILE:
+            printf("<comando> ::= <comando repetitivo>\n");
+            analisarComandoRepetitivo();
+            break;
+        default:
+            casaToken(TOKEN_IDENT); // Força erro
+            break;
     }
 }
 
@@ -197,14 +209,13 @@ static void analisarRelacao(void) {
 /* <expressão simples> ::= [ + | - ] <termo> { ( + | - ) <termo> } */
 static void analisarExpressaoSimples(void) {
     printf("<expressão simples> ::= [ + | - ] <termo> { ( + | - ) <termo> }\n");
-    int type = current_token.tipo;
-    if (type == '+' || type == '-') {
-        casaToken(type);
+    if (current_token.tipo == '+' || current_token.tipo == '-') {
+        casaToken(current_token.tipo);
     }
     analisarTermo();
-    while (current_token.tipo == '+' || current_token.tipo == '-') {
-        int op = current_token.tipo;
-        casaToken(op);
+    for (;;) {
+        if (current_token.tipo != '+' && current_token.tipo != '-') break;
+        casaToken(current_token.tipo);
         analisarTermo();
     }
 }
@@ -213,29 +224,33 @@ static void analisarExpressaoSimples(void) {
 static void analisarTermo(void) {
     printf("<termo> ::= <fator> { ( * | / ) <fator> }\n");
     analisarFator();
-    while (current_token.tipo == '*' || current_token.tipo == '/') {
-        int op = current_token.tipo;
-        casaToken(op);
+    for (;;) {
+        if (current_token.tipo != '*' && current_token.tipo != '/') break;
+        casaToken(current_token.tipo);
         analisarFator();
     }
 }
 
 /* <fator> ::= <variável> | <número> | ( <expressão> ) */
 static void analisarFator(void) {
-    int type = current_token.tipo;
-    if (type == TOKEN_IDENT) {
-        printf("<fator> ::= <variável>\n");
-        analisarVariavel();
-    } else if (type == TOKEN_NUM) {
-        printf("<fator> ::= <número>\n");
-        casaToken(TOKEN_NUM);
-    } else if (type == '(') {
-        printf("<fator> ::= ( <expressão> )\n");
-        casaToken('(');
-        analisarExpressao();
-        casaToken(')');
-    } else {
-        casaToken(TOKEN_IDENT); // Força erro
+    switch (current_token.tipo) {
+        case TOKEN_IDENT:
+            printf("<fator> ::= <variável>\n");
+            analisarVariavel();
+            break;
+        case TOKEN_NUM:
+            printf("<fator> ::= <número>\n");
+            casaToken(TOKEN_NUM);
+            break;
+        case '(':
+            printf("<fator> ::= ( <expressão> )\n");
+            casaToken('(');
+            analisarExpressao();
+            casaToken(')');
+            break;
+        default:
+            casaToken(TOKEN_IDENT); // Força erro
+            break;
     }
 }
 

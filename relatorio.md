@@ -38,7 +38,7 @@ Decidimos dividir o projeto em três partes principais para facilitar a organiza
 
 - **`initLexico`**: Prepara o analisador léxico, recebendo a string do código-fonte e setando a linha inicial para 1.
 - **`proximoToken`**: Essa é a função principal do léxico. Ela é chamada toda vez que o sintático precisa de um novo token. Ela pula os espaços e comentários, lê os caracteres e monta o token certinho (seja palavra reservada, número, identificador ou operador).
-- **`skip_ws_and_comments`**: Função auxiliar que ignora espaços em branco, quebras de linha (atualizando a contagem) e os comentários em bloco (tanto no estilo `{ ... }` quanto `(* ... *)`).
+- **`pular_espacos_e_comentarios`**: Função auxiliar que ignora espaços em branco, quebras de linha (atualizando a contagem) e os comentários em bloco (tanto no estilo `{ ... }` quanto `(* ... *)`).
 - **`nomeToken`**: Uma função utilitária para imprimir o nome do token como texto (ajuda bastante na hora de debugar).
 
 ---

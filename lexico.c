@@ -4,39 +4,42 @@
 #include <string.h>
 #include "lexico.h"
 
-static const char *input;
-static int current_line = 1;
+static const char *fonte;
+static int pos_fonte = 0;
+static int linha_atual = 1;
 
 /*
  * initLexico
  * Inicializa o analisador lexico com o codigo-fonte.
  */
 void initLexico(const char *src) {
-    input = src;
-    current_line = 1;
+    fonte = src;
+    pos_fonte = 0;
+    linha_atual = 1;
 }
+
 /* Pula espaços em branco e comentários */
-static void skip_ws_and_comments(void) {
-    for (;;) {
+static void pular_espacos_e_comentarios(void) {
+    while (1) {
         // Ignora espaços, tabulações e quebras de linha
-        while (*input == ' ' || *input == '\t' || *input == '\r' || *input == '\n') {
-            if (*input == '\n') {
-                current_line++;
+        while (fonte[pos_fonte] == ' ' || fonte[pos_fonte] == '\t' || fonte[pos_fonte] == '\r' || fonte[pos_fonte] == '\n') {
+            if (fonte[pos_fonte] == '\n') {
+                linha_atual++;
             }
-            input++;
+            pos_fonte++;
         }
 
         // Verifica comentário no estilo { ... }
-        if (*input == '{') {
-            input++; // consome '{'
-            while (*input != '\0' && *input != '}') {
-                if (*input == '\n') {
-                    current_line++;
+        if (fonte[pos_fonte] == '{') {
+            pos_fonte++; // consome '{'
+            while (fonte[pos_fonte] != '\0' && fonte[pos_fonte] != '}') {
+                if (fonte[pos_fonte] == '\n') {
+                    linha_atual++;
                 }
-                input++;
+                pos_fonte++;
             }
-            if (*input == '}') {
-                input++; // consome '}'
+            if (fonte[pos_fonte] == '}') {
+                pos_fonte++; // consome '}'
                 continue; // volta a checar se há mais espaços ou comentários
             } else {
                 // Comentário não fechado
@@ -45,16 +48,16 @@ static void skip_ws_and_comments(void) {
         }
 
         // Verifica comentário no estilo (* ... *)
-        if (*input == '(' && *(input + 1) == '*') {
-            input += 2; // consome '(*'
-            while (*input != '\0' && !(*input == '*' && *(input + 1) == ')')) {
-                if (*input == '\n') {
-                    current_line++;
+        if (fonte[pos_fonte] == '(' && fonte[pos_fonte + 1] == '*') {
+            pos_fonte += 2; // consome '(*'
+            while (fonte[pos_fonte] != '\0' && !(fonte[pos_fonte] == '*' && fonte[pos_fonte + 1] == ')')) {
+                if (fonte[pos_fonte] == '\n') {
+                    linha_atual++;
                 }
-                input++;
+                pos_fonte++;
             }
-            if (*input == '*' && *(input + 1) == ')') {
-                input += 2; // consome '*)'
+            if (fonte[pos_fonte] == '*' && fonte[pos_fonte + 1] == ')') {
+                pos_fonte += 2; // consome '*)'
                 continue; // volta a checar se há mais espaços ou comentários
             } else {
                 // Comentário não fechado
@@ -75,76 +78,66 @@ Token proximoToken(void) {
     Token tok;
     memset(&tok, 0, sizeof(tok));
 
-    skip_ws_and_comments();
+    pular_espacos_e_comentarios();
 
-    tok.linha = current_line;
+    tok.linha = linha_atual;
 
-    if (*input == '\0') {
+    if (fonte[pos_fonte] == '\0') {
         tok.tipo = TOKEN_EOF;
         strcpy(tok.lexema, "fim de arquivo");
         return tok;
     }
+    
+    char c = fonte[pos_fonte];
 
     // Identificadores e Palavras Reservadas
-    if (isalpha((unsigned char)*input) || *input == '_') {
+    if (isalpha((unsigned char)c) || c == '_') {
         int len = 0;
-        while (isalnum((unsigned char)*input) || *input == '_') {
+        while (isalnum((unsigned char)fonte[pos_fonte]) || fonte[pos_fonte] == '_') {
             if (len < 127) {
-                tok.lexema[len++] = *input;
+                tok.lexema[len++] = fonte[pos_fonte];
             }
-            input++;
+            pos_fonte++;
         }
         tok.lexema[len] = '\0';
 
         // Checa palavras-chave
-        if (strcmp(tok.lexema, "program") == 0) {
-            tok.tipo = TOKEN_PROGRAM;
-        } else if (strcmp(tok.lexema, "var") == 0) {
-            tok.tipo = TOKEN_VAR;
-        } else if (strcmp(tok.lexema, "integer") == 0) {
-            tok.tipo = TOKEN_INTEGER;
-        } else if (strcmp(tok.lexema, "real") == 0) {
-            tok.tipo = TOKEN_REAL;
-        } else if (strcmp(tok.lexema, "begin") == 0) {
-            tok.tipo = TOKEN_BEGIN;
-        } else if (strcmp(tok.lexema, "end") == 0) {
-            tok.tipo = TOKEN_END;
-        } else if (strcmp(tok.lexema, "if") == 0) {
-            tok.tipo = TOKEN_IF;
-        } else if (strcmp(tok.lexema, "then") == 0) {
-            tok.tipo = TOKEN_THEN;
-        } else if (strcmp(tok.lexema, "else") == 0) {
-            tok.tipo = TOKEN_ELSE;
-        } else if (strcmp(tok.lexema, "while") == 0) {
-            tok.tipo = TOKEN_WHILE;
-        } else if (strcmp(tok.lexema, "do") == 0) {
-            tok.tipo = TOKEN_DO;
-        } else {
-            tok.tipo = TOKEN_IDENT;
-        }
+        if (strcmp(tok.lexema, "program") == 0) tok.tipo = TOKEN_PROGRAM;
+        else if (strcmp(tok.lexema, "var") == 0) tok.tipo = TOKEN_VAR;
+        else if (strcmp(tok.lexema, "integer") == 0) tok.tipo = TOKEN_INTEGER;
+        else if (strcmp(tok.lexema, "real") == 0) tok.tipo = TOKEN_REAL;
+        else if (strcmp(tok.lexema, "begin") == 0) tok.tipo = TOKEN_BEGIN;
+        else if (strcmp(tok.lexema, "end") == 0) tok.tipo = TOKEN_END;
+        else if (strcmp(tok.lexema, "if") == 0) tok.tipo = TOKEN_IF;
+        else if (strcmp(tok.lexema, "then") == 0) tok.tipo = TOKEN_THEN;
+        else if (strcmp(tok.lexema, "else") == 0) tok.tipo = TOKEN_ELSE;
+        else if (strcmp(tok.lexema, "while") == 0) tok.tipo = TOKEN_WHILE;
+        else if (strcmp(tok.lexema, "do") == 0) tok.tipo = TOKEN_DO;
+        else tok.tipo = TOKEN_IDENT;
+        
         return tok;
     }
 
     // Números (inteiros ou reais)
-    if (isdigit((unsigned char)*input)) {
+    if (isdigit((unsigned char)c)) {
         int len = 0;
-        while (isdigit((unsigned char)*input)) {
+        while (isdigit((unsigned char)fonte[pos_fonte])) {
             if (len < 127) {
-                tok.lexema[len++] = *input;
+                tok.lexema[len++] = fonte[pos_fonte];
             }
-            input++;
+            pos_fonte++;
         }
         // Verifica se possui parte decimal
-        if (*input == '.' && isdigit((unsigned char)*(input + 1))) {
+        if (fonte[pos_fonte] == '.' && isdigit((unsigned char)fonte[pos_fonte + 1])) {
             if (len < 127) {
-                tok.lexema[len++] = *input;
+                tok.lexema[len++] = fonte[pos_fonte];
             }
-            input++; // consome '.'
-            while (isdigit((unsigned char)*input)) {
+            pos_fonte++; // consome '.'
+            while (isdigit((unsigned char)fonte[pos_fonte])) {
                 if (len < 127) {
-                    tok.lexema[len++] = *input;
+                    tok.lexema[len++] = fonte[pos_fonte];
                 }
-                input++;
+                pos_fonte++;
             }
         }
         tok.lexema[len] = '\0';
@@ -154,61 +147,56 @@ Token proximoToken(void) {
     }
 
     // Atribuição ou Dois-pontos
-    if (*input == ':') {
-        if (*(input + 1) == '=') {
+    if (c == ':') {
+        if (fonte[pos_fonte + 1] == '=') {
             tok.tipo = TOKEN_ASSIGN;
             strcpy(tok.lexema, ":=");
-            input += 2;
-            return tok;
+            pos_fonte += 2;
         } else {
             tok.tipo = ':';
             strcpy(tok.lexema, ":");
-            input++;
-            return tok;
+            pos_fonte++;
         }
+        return tok;
     }
 
     // Operadores relacionais ou Menor-que
-    if (*input == '<') {
-        if (*(input + 1) == '>') {
+    if (c == '<') {
+        if (fonte[pos_fonte + 1] == '>') {
             tok.tipo = TOKEN_NEQ;
             strcpy(tok.lexema, "<>");
-            input += 2;
-            return tok;
-        } else if (*(input + 1) == '=') {
+            pos_fonte += 2;
+        } else if (fonte[pos_fonte + 1] == '=') {
             tok.tipo = TOKEN_LE;
             strcpy(tok.lexema, "<=");
-            input += 2;
-            return tok;
+            pos_fonte += 2;
         } else {
             tok.tipo = '<';
             strcpy(tok.lexema, "<");
-            input++;
-            return tok;
+            pos_fonte++;
         }
+        return tok;
     }
 
-    if (*input == '>') {
-        if (*(input + 1) == '=') {
+    if (c == '>') {
+        if (fonte[pos_fonte + 1] == '=') {
             tok.tipo = TOKEN_GE;
             strcpy(tok.lexema, ">=");
-            input += 2;
-            return tok;
+            pos_fonte += 2;
         } else {
             tok.tipo = '>';
             strcpy(tok.lexema, ">");
-            input++;
-            return tok;
+            pos_fonte++;
         }
+        return tok;
     }
 
     // Símbolos e operadores de um único caractere
-    char c = *input;
     if (c == ';' || c == '.' || c == ',' || c == '=' || c == '+' || c == '-' || c == '*' || c == '/' || c == '(' || c == ')') {
         tok.tipo = c;
         tok.lexema[0] = c;
         tok.lexema[1] = '\0';
-        input++;
+        pos_fonte++;
         return tok;
     }
 
@@ -216,10 +204,9 @@ Token proximoToken(void) {
     tok.tipo = TOKEN_INVALID;
     tok.lexema[0] = c;
     tok.lexema[1] = '\0';
-    input++;
+    pos_fonte++;
     return tok;
 }
-
 
 /*
  * nomeToken
